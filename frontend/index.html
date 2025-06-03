@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MongoDB Doc Editor</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        /* Ultra dark gradient background */
+        background: linear-gradient(
+          135deg,
+          #000000 0%,
+          #0a0a0f 70%,
+          #100c1c 100%
+        ); /* Black to very dark purple */
+        min-height: 100vh;
+        padding: 20px;
+        color: #d0d0e0; /* Lighter text for contrast */
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        /* Very dark container background */
+        background: #0d0d12; /* Near black, slightly purplish */
+        border-radius: 20px;
+        /* Subtle shadow for ultra dark mode */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+      }
+
+      .header {
+        /* Dark header with purple touch */
+        background: linear-gradient(
+          135deg,
+          #1a1229 0%,
+          #0f0a1a 100%
+        ); /* Dark purple gradient */
+        color: #eaeaf5;
+        padding: 30px;
+        text-align: center;
+        border-bottom: 1px solid #3a2f4f; /* Subtle purple separator */
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.7;
+        color: #b0a8c0; /* Muted purple-ish text */
+      }
+
+      .main-content {
+        padding: 40px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 2fr auto;
+        gap: 20px;
+        margin-bottom: 30px;
+        align-items: end;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #9080a0; /* Muted purple/gray label */
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      select,
+      input {
+        padding: 12px 16px;
+        background: #181520; /* Dark purple-tinged input */
+        border: 2px solid #302840; /* Darker purple border */
+        color: #c8c0d8;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      select:focus,
+      input:focus {
+        outline: none;
+        border-color: #7f5af0; /* Bright Purple for focus */
+        box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.3);
+      }
+
+      .btn {
+        padding: 12px 24px;
+        /* Default button: Purple */
+        background: linear-gradient(
+          135deg,
+          #6a0dad 0%,
+          #5a00a0 100%
+        ); /* Grape to Deep Purple */
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex; /* For aligning icon and text if any */
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(
+          135deg,
+          #7f00ff 0%,
+          #6a0dad 100%
+        ); /* Brighter purple on hover */
+        box-shadow: 0 5px 12px rgba(127, 0, 255, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn.save {
+        /* Save button: Dark Green */
+        background: linear-gradient(135deg, #1e7e34 0%, #155d27 100%);
+      }
+
+      .btn.save:hover {
+        background: linear-gradient(135deg, #259841 0%, #1e7e34 100%);
+        box-shadow: 0 5px 12px rgba(37, 152, 65, 0.4);
+      }
+
+      .btn.delete-icon {
+        /* New style for delete icon button */
+        background: transparent;
+        border: 1px solid #a51c30; /* Dark red border */
+        color: #a51c30; /* Dark red icon color */
+        padding: 8px; /* Smaller padding */
+        width: 40px; /* Fixed width */
+        height: 40px; /* Fixed height */
+        border-radius: 50%; /* Circular button */
+        text-transform: none; /* No uppercase for icon button */
+        position: relative; /* For tooltip positioning */
+      }
+
+      .btn.delete-icon svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      .btn.delete-icon:hover {
+        background: rgba(165, 28, 48, 0.1); /* Subtle red background on hover */
+        color: #bf2a3f;
+        border-color: #bf2a3f;
+        box-shadow: 0 2px 8px rgba(191, 42, 63, 0.3);
+        transform: translateY(-1px);
+      }
+
+      /* Tooltip for delete button */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: #302840; /* Dark purple tooltip background */
+        color: #c8c0d8;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 8px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%; /* Position above the button */
+        left: 50%;
+        margin-left: -60px; /* Center the tooltip */
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.8rem;
+      }
+
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .editor-container {
+        background: #050508; /* Almost black for editor */
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        border: 1px solid #2a1a3a; /* Subtle dark purple border */
+      }
+
+      .editor-header {
+        background: #100a14; /* Very dark purple for editor header */
+        padding: 15px 20px;
+        color: #bca0dc;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .editor-header::before {
+        content: "📄";
+        font-size: 1.2rem;
+        opacity: 0.8;
+      }
+
+      #jsonEditor {
+        width: 100%;
+        height: 500px;
+        background: #050508; /* Consistent almost black */
+        color: #b0b8c0; /* Light gray for editor text */
+        border: none;
+        padding: 20px;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+        outline: none;
+        overflow: auto;
+        white-space: pre;
+        word-wrap: normal;
+        tab-size: 2;
+      }
+
+      .status {
+        margin-top: 20px;
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-weight: 500;
+        display: none;
+      }
+
+      .status.success {
+        background: linear-gradient(
+          135deg,
+          #103a10 0%,
+          #0a2a0a 100%
+        ); /* Dark green */
+        color: #70e070;
+        border: 1px solid #1a4a1a;
+      }
+
+      .status.error {
+        background: linear-gradient(
+          135deg,
+          #4a1010 0%,
+          #3a0a0a 100%
+        ); /* Dark red */
+        color: #f07070;
+        border: 1px solid #5a1a1a;
+      }
+
+      .status.info {
+        background: linear-gradient(
+          135deg,
+          #2a0a4a 0%,
+          #1a053a 100%
+        ); /* Dark purple */
+        color: #c070f0;
+        border: 1px solid #3a105a;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(127, 90, 240, 0.2); /* Purple transparent border */
+        border-radius: 50%;
+        border-top-color: #7f5af0; /* Purple top border */
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+        background: #252030 !important; /* Darker disabled background */
+      }
+      .btn.delete-icon:disabled {
+        /* Specific disabled style for icon button */
+        background: transparent !important;
+        border-color: #4a4058 !important;
+        color: #4a4058 !important;
+        opacity: 0.5;
+      }
+
+      .actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        justify-content: space-between; /* Positions save on left, delete on right */
+        align-items: center; /* Vertically align items */
+      }
+
+      @media (max-width: 768px) {
+        .controls {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+
+        .main-content {
+          padding: 20px;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .actions {
+          flex-direction: row; /* Keep as row on mobile for save left, delete right */
+          justify-content: space-between;
+        }
+        .btn {
+          /* Ensure save button doesn't take full width if actions is row */
+          width: auto;
+        }
+        .btn.save {
+          flex-grow: 1; /* Allow save button to take available space */
+          margin-right: 15px; /* Add some space between save and delete icon */
+        }
+        .btn.delete-icon {
+          width: 40px; /* Maintain size on mobile */
+          height: 40px;
+          flex-shrink: 0; /* Prevent delete icon from shrinking */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>MongoDB Document Editor</h1>
+      </div>
+
+      <div class="main-content">
+        <div class="controls">
+          <div class="form-group">
+            <label for="collectionSelect">Collection</label>
+            <select id="collectionSelect">
+              <option value="">Select a collection...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="documentId">Document ID</label>
+            <input
+              type="text"
+              id="documentId"
+              placeholder="Enter MongoDB ObjectId"
+            />
+          </div>
+
+          <button class="btn" id="loadBtn">Load Document</button>
+        </div>
+
+        <div class="editor-container">
+          <div class="editor-header">Document Editor</div>
+          <textarea
+            id="jsonEditor"
+            placeholder="Load a document to start editing..."
+          ></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn save" id="saveBtn" disabled>Save Changes</button>
+          <div class="tooltip">
+            <button class="btn delete-icon" id="deleteBtn" disabled>
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                />
+              </svg>
+            </button>
+            <span class="tooltiptext">Delete Document</span>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:5001/api";
+
+      let currentCollection = "";
+      let currentDocumentId = "";
+      let originalDocument = null;
+
+      const collectionSelect = document.getElementById("collectionSelect");
+      const documentIdInput = document.getElementById("documentId");
+      const loadBtn = document.getElementById("loadBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const deleteBtn = document.getElementById("deleteBtn");
+      const jsonEditor = document.getElementById("jsonEditor");
+      const status = document.getElementById("status");
+
+      async function init() {
+        await loadCollections();
+        setupEventListeners();
+      }
+
+      async function loadCollections() {
+        try {
+          showStatus("Loading collections...", "info");
+          const response = await fetch(`${API_BASE}/collections`);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const collections = await response.json();
+
+          collectionSelect.innerHTML =
+            '<option value="">Select a collection...</option>';
+          collections.forEach((collection) => {
+            const option = document.createElement("option");
+            option.value = collection.name;
+            option.textContent = collection.name;
+            collectionSelect.appendChild(option);
+          });
+
+          hideStatus();
+        } catch (error) {
+          showStatus(`Failed to load collections: ${error.message}`, "error");
+        }
+      }
+
+      async function loadDocument() {
+        const collection = collectionSelect.value;
+        const documentId = documentIdInput.value.trim();
+
+        if (!collection || !documentId) {
+          showStatus(
+            "Please select a collection and enter a document ID.",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          setLoading(true, loadBtn);
+          showStatus("Loading document...", "info");
+
+          const response = await fetch(
+            `${API_BASE}/documents/${collection}/${documentId}`
+          );
+
+          if (!response.ok) {
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+              const errorData = await response.json();
+              errorMsg = errorData.error || errorMsg;
+            } catch (e) {
+              /* Ignore */
+            }
+            throw new Error(errorMsg);
+          }
+
+          const documentData = await response.json();
+
+          currentCollection = collection;
+          currentDocumentId = documentId;
+          originalDocument = JSON.stringify(documentData, null, 2);
+
+          jsonEditor.value = originalDocument;
+          saveBtn.disabled = false;
+          deleteBtn.disabled = false;
+
+          showStatus("Document loaded successfully!", "success");
+        } catch (error) {
+          showStatus(`Failed to load document: ${error.message}`, "error");
+          jsonEditor.value = "";
+          saveBtn.disabled = true;
+          deleteBtn.disabled = true;
+        } finally {
+          setLoading(false, loadBtn);
+        }
+      }
+
+      async function saveDocument() {
+        if (!currentCollection || !currentDocumentId) {
+          showStatus("No document loaded to save.", "error");
+          return;
+        }
+
+        try {
+          const jsonContent = jsonEditor.value.trim();
+          if (!jsonContent) {
+            showStatus("Editor is empty. Nothing to save.", "error");
+            return;
+          }
+
+          let parsedDocument;
+          try {
+            parsedDocument = JSON.parse(jsonContent);
+          } catch (e) {
+            showStatus(
+              `Invalid JSON format: ${e.message}. Please check syntax.`,
+              "error"
+            );
+            return;
+          }
+
+          setLoading(true, saveBtn);
+          showStatus("Saving document...", "info");
+
+          const response = await fetch(
+            `${API_BASE}/documents/${currentCollection}/${currentDocumentId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(parsedDocument),
+            }
+          );
+
+          if (!response.ok) {
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+              const errorData = await response.json();
+              errorMsg = errorData.error || errorMsg;
+            } catch (e) {
+              /* Ignore */
+            }
+            throw new Error(errorMsg);
+          }
+
+          const result = await response.json();
+
+          originalDocument = JSON.stringify(
+            result.document || parsedDocument,
+            null,
+            2
+          );
+          jsonEditor.value = originalDocument;
+
+          showStatus("Document saved successfully!", "success");
+        } catch (error) {
+          showStatus(`Failed to save document: ${error.message}`, "error");
+        } finally {
+          setLoading(false, saveBtn);
+        }
+      }
+
+      function showConfirmationModal(message, onConfirm) {
+        const existingModal = document.getElementById("confirmationModal");
+        if (existingModal) {
+          existingModal.remove();
+        }
+
+        const modalOverlay = document.createElement("div");
+        modalOverlay.id = "confirmationModal";
+        Object.assign(modalOverlay.style, {
+          position: "fixed",
+          top: "0",
+          left: "0",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.85)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: "1000",
+        });
+
+        const modalContent = document.createElement("div");
+        Object.assign(modalContent.style, {
+          background: "#100C1C",
+          padding: "30px",
+          borderRadius: "12px",
+          boxShadow: "0 8px 25px rgba(0,0,0,0.7)",
+          textAlign: "center",
+          color: "#EAEAF5",
+          border: "1px solid #3A2F4F",
+          minWidth: "300px",
+          maxWidth: "90%",
+        });
+
+        const modalMessage = document.createElement("p");
+        modalMessage.textContent = message;
+        Object.assign(modalMessage.style, {
+          marginBottom: "25px",
+          fontSize: "1.1rem",
+          lineHeight: "1.5",
+        });
+
+        const buttonContainer = document.createElement("div");
+        Object.assign(buttonContainer.style, {
+          display: "flex",
+          justifyContent: "center",
+          gap: "15px",
+        });
+
+        const confirmButton = document.createElement("button");
+        confirmButton.textContent = "Confirm";
+        // Keep .btn for basic styling, but override background/text for delete confirmation
+        confirmButton.className = "btn";
+        Object.assign(confirmButton.style, {
+          background: "linear-gradient(135deg, #A51C30 0%, #801323 100%)", // Dark Red
+        });
+        confirmButton.onmouseover = () => {
+          confirmButton.style.background =
+            "linear-gradient(135deg, #BF2A3F 0%, #A51C30 100%)";
+        };
+        confirmButton.onmouseout = () => {
+          confirmButton.style.background =
+            "linear-gradient(135deg, #A51C30 0%, #801323 100%)";
+        };
+
+        const cancelButton = document.createElement("button");
+        cancelButton.textContent = "Cancel";
+        cancelButton.className = "btn"; // Uses .btn styles (purple default)
+        cancelButton.style.background =
+          "linear-gradient(135deg, #4A4058 0%, #302840 100%)"; // Muted cancel
+        cancelButton.onmouseover = () => {
+          cancelButton.style.background =
+            "linear-gradient(135deg, #5A5068 0%, #403850 100%)";
+        };
+        cancelButton.onmouseout = () => {
+          cancelButton.style.background =
+            "linear-gradient(135deg, #4A4058 0%, #302840 100%)";
+        };
+
+        confirmButton.onclick = () => {
+          onConfirm();
+          modalOverlay.remove();
+        };
+        cancelButton.onclick = () => modalOverlay.remove();
+
+        buttonContainer.appendChild(confirmButton);
+        buttonContainer.appendChild(cancelButton);
+        modalContent.appendChild(modalMessage);
+        modalContent.appendChild(buttonContainer);
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+      }
+
+      async function deleteDocument() {
+        if (!currentCollection || !currentDocumentId) {
+          showStatus("No document loaded to delete.", "error");
+          return;
+        }
+
+        showConfirmationModal(
+          "Are you sure you want to delete this document? This action cannot be undone.",
+          async () => {
+            try {
+              setLoading(true, deleteBtn);
+              showStatus("Deleting document...", "info");
+
+              const response = await fetch(
+                `${API_BASE}/documents/${currentCollection}/${currentDocumentId}`,
+                { method: "DELETE" }
+              );
+
+              if (!response.ok) {
+                let errorMsg = `HTTP error! status: ${response.status}`;
+                try {
+                  const errorData = await response.json();
+                  errorMsg = errorData.error || errorMsg;
+                } catch (e) {
+                  /* Ignore */
+                }
+                throw new Error(errorMsg);
+              }
+
+              jsonEditor.value = "";
+              saveBtn.disabled = true;
+              deleteBtn.disabled = true;
+              documentIdInput.value = "";
+              currentCollection = "";
+              currentDocumentId = "";
+              originalDocument = null;
+
+              showStatus("Document deleted successfully!", "success");
+            } catch (error) {
+              showStatus(
+                `Failed to delete document: ${error.message}`,
+                "error"
+              );
+            } finally {
+              setLoading(false, deleteBtn);
+            }
+          }
+        );
+      }
+
+      function setupEventListeners() {
+        loadBtn.addEventListener("click", loadDocument);
+        saveBtn.addEventListener("click", saveDocument);
+        deleteBtn.addEventListener("click", deleteDocument);
+        documentIdInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") loadDocument();
+        });
+      }
+
+      function showStatus(message, type) {
+        status.textContent = message;
+        status.className = `status ${type}`;
+        status.style.display = "block";
+        if (type === "success" || type === "info") {
+          setTimeout(hideStatus, 3000);
+        }
+      }
+
+      function hideStatus() {
+        status.style.display = "none";
+      }
+
+      function setLoading(loading, triggeredButton) {
+        const buttons = [loadBtn, saveBtn, deleteBtn];
+        buttons.forEach((button) => {
+          if (button) {
+            // Special handling for icon button to not overwrite its SVG content
+            if (button.classList.contains("delete-icon") && loading) {
+              // We could add a spinner inside or just disable it
+            } else if (button.classList.contains("delete-icon") && !loading) {
+              // Ensure SVG is still there
+            } else if (loading && button === triggeredButton) {
+              button.innerHTML = '<div class="loading"></div>';
+            } else if (!loading) {
+              if (button === loadBtn) button.innerHTML = "Load Document";
+              else if (button === saveBtn) button.innerHTML = "Save Changes";
+              // Delete button text/icon is static, no need to change innerHTML here unless it was also showing a spinner
+            }
+            button.disabled = loading;
+          }
+        });
+
+        // After loading is false, correctly set disabled states based on logic
+        if (!loading) {
+          if (saveBtn) saveBtn.disabled = !currentDocumentId;
+          if (deleteBtn) deleteBtn.disabled = !currentDocumentId; // Also disable loadBtn if appropriate
+          if (loadBtn && triggeredButton === loadBtn && !currentDocumentId) {
+            // If loading a doc failed, loadBtn should be re-enabled
+          } else if (loadBtn) {
+            // general re-enable after any operation
+            loadBtn.disabled = false;
+          }
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>
